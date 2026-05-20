@@ -867,8 +867,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bio",
+ "clap",
  "genomic-system-finder-hmm",
  "hmmer-pure-rs",
+ "rayon",
 ]
 
 [[package]]

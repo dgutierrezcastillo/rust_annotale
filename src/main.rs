@@ -10,6 +10,22 @@ use hmmer_pure_rs::sequence::Sequence as HmmSequence;
 use hmmer_pure_rs::{Hmm, Pipeline, Profile, TopHits, OProfile};
 use std::path::Path;
 use std::collections::HashMap;
+use clap::Parser;
+use rayon::prelude::*;
+
+
+#[derive(Parser, Debug)]
+#[command(author, version, about = "A Rust implementation of AnnoTALE")]
+struct Args {
+    #[arg(short, long)]
+    fasta: String,
+
+    #[arg(long)]
+    hmm_dir: String,
+
+    #[arg(short, long, default_value_t = 100.0)]
+    threshold: f32,
+}
 
 // --- Translation Logic ---
 
@@ -118,24 +134,33 @@ impl TALEFinder {
         raw_matches.sort_by_key(|m| m.0);
         let mut clusters = Vec::new();
         if !raw_matches.is_empty() {
-            let (mut c_start, mut c_end, mut c_score) = raw_matches[0];
+            let mut current_cluster = Vec::new();
+            current_cluster.push(raw_matches[0]);
+            let mut c_end = raw_matches[0].1;
+            let mut c_score = raw_matches[0].2;
+
             for i in 1..raw_matches.len() {
-                let (next_start, next_end, next_score) = raw_matches[i];
-                if next_start < c_end + 500 {
-                    c_end = std::cmp::max(c_end, next_end);
-                    c_score += next_score;
+                let m = raw_matches[i];
+                if m.0 < c_end + 500 {
+                    c_end = std::cmp::max(c_end, m.1);
+                    c_score += m.2;
+                    current_cluster.push(m);
                 } else {
-                    clusters.push((c_start, c_end, c_score));
-                    c_start = next_start;
-                    c_end = next_end;
-                    c_score = next_score;
+                    clusters.push((current_cluster.clone(), c_score));
+                    current_cluster.clear();
+                    current_cluster.push(m);
+                    c_end = m.1;
+                    c_score = m.2;
                 }
             }
-            clusters.push((c_start, c_end, c_score));
+            clusters.push((current_cluster, c_score));
         }
 
         let mut final_tales = Vec::new();
-        for (c_start, c_end, c_score) in clusters {
+        for (domains, c_score) in clusters {
+            let c_start = domains[0].0;
+            let c_end = domains.last().unwrap().1;
+            
             // Refine boundaries
             let buffer = 1200;
             let search_start = c_start.saturating_sub(buffer);
@@ -148,7 +173,7 @@ impl TALEFinder {
 
             // Extract RVDs
             let rvds = if !is_pseudo && (final_cds_end - final_cds_start) > 100 {
-                self.extract_rvds(&sequence[final_cds_start..final_cds_end])
+                self.extract_rvds(sequence, final_cds_start, &domains)
             } else {
                 "N/A".to_string()
             };
@@ -234,42 +259,61 @@ impl TALEFinder {
         }
     }
 
-    fn extract_rvds(&self, cds_sequence: &[u8]) -> String {
-        let protein = self.translator.translate(cds_sequence);
-        
+    fn extract_rvds(&self, sequence: &[u8], cds_start: usize, domains: &[(usize, usize, f32)]) -> String {
         let mut rvd_str = String::new();
-        // A TALE repeat is usually 34-35 aa.
-        // We look for a pattern around where the RVD should be.
-        // Simplified: Look for conserved LTPEQVVAIAS pattern, then RVD is right after.
-        // Actually, let's just do a windowed scan for the protein sequence.
         
-        let mut i = 0;
-        while i + 34 <= protein.len() {
-            // Conserved part of TALE repeat often ends with ...VAIA SNN ...
-            // The RVD is at position 12 and 13 of the 34aa repeat.
-            let rvd = format!("{}{}", protein[i+12] as char, protein[i+13] as char);
-            if !rvd_str.is_empty() { rvd_str.push('-'); }
-            rvd_str.push_str(&rvd);
-            i += 34; // standard repeat length
+        for m in domains {
+            let domain_start = m.0;
+            if domain_start < cds_start { continue; }
+            
+            // Find the offset from the CDS start
+            let offset = domain_start - cds_start;
+            
+            // Align to the nearest codon
+            let frame_shift = offset % 3;
+            let aligned_start = domain_start - frame_shift;
+            
+            // The RVD is at amino acids 12 and 13 of the repeat.
+            // That is 12 * 3 = 36 bp from the aligned start of the repeat.
+            let rvd_dna_start = aligned_start + 36;
+            let rvd_dna_end = rvd_dna_start + 6;
+            
+            if rvd_dna_end <= sequence.len() {
+                let rvd_dna = &sequence[rvd_dna_start..rvd_dna_end];
+                let rvd_aa = self.translator.translate(rvd_dna);
+                if rvd_aa.len() >= 2 {
+                    if !rvd_str.is_empty() { rvd_str.push('-'); }
+                    rvd_str.push(rvd_aa[0] as char);
+                    rvd_str.push(rvd_aa[1] as char);
+                }
+            }
         }
-        rvd_str
+        
+        if rvd_str.is_empty() {
+            "N/A".to_string()
+        } else {
+            rvd_str
+        }
     }
 }
 
 fn main() -> Result<()> {
-    let hmm_dir = "/home/diego/AnnoTALE/annotale/src/main/resources/annotale/data";
-    let threshold = 100.0;
+    let args = Args::parse();
     
-    println!("Initializing TALEFinder with HMMs from {}...", hmm_dir);
-    let finder = TALEFinder::new(hmm_dir, threshold)?;
+    println!("Initializing TALEFinder with HMMs from {}...", args.hmm_dir);
+    let finder = TALEFinder::new(&args.hmm_dir, args.threshold)?;
 
-    let fasta_path = "/home/diego/Uniqprimer/data/Xoo_KACC_10331.fasta";
-    let reader = fasta::Reader::from_file(fasta_path)?;
+    let reader = fasta::Reader::from_file(&args.fasta)?;
 
-    println!("Scanning {} for TALE effectors...", fasta_path);
+    println!("Scanning {} for TALE effectors...", args.fasta);
 
+    // Read all records to parallelize
+    let mut records = Vec::new();
     for result in reader.records() {
-        let record = result?;
+        records.push(result?);
+    }
+
+    records.par_iter().for_each(|record| {
         let id = record.id();
         let seq = record.seq();
         
@@ -293,7 +337,7 @@ fn main() -> Result<()> {
         } else {
             println!("No TALE effectors found in {}", id);
         }
-    }
+    });
 
     Ok(())
 }
