@@ -871,6 +871,7 @@ dependencies = [
  "genomic-system-finder-hmm",
  "hmmer-pure-rs",
  "rayon",
+ "strsim",
 ]
 
 [[package]]
