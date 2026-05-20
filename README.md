@@ -57,12 +57,40 @@ Transcription Activator-Like Effectors (TALEs) possess a highly conserved three-
 2. **`repeats.hmm` (Tandem Repeat Profile)**: Identifies the canonical 34–35 amino acid repeat sequences in the central DNA-binding domain.
 3. **`ends.hmm` (C-terminus Profile)**: Maps the conserved C-terminal region containing nuclear localization signals (NLS) and transcription activation domains.
 
-### Where to Find Them
-These HMM profiles are part of the original AnnoTALE resource dataset. On this system, they are located at:
-```
+### How to Acquire the HMM Profiles
+
+These HMM profiles are sourced directly from the original **AnnoTALE Java repository** and are required for the scanner to execute.
+
+#### Option 1: Retrieve from a Local AnnoTALE Installation
+If you already have AnnoTALE cloned or installed locally, you can locate the HMM files inside the source resources folder:
+```bash
+# Local path on this workstation:
 /home/diego/AnnoTALE/annotale/src/main/resources/annotale/data/
 ```
-When running the TALE predictor binary (`rust_annotale`), pass this directory path to the `--hmm-dir` argument so that the tool can load `starts.hmm`, `repeats.hmm`, and `ends.hmm` dynamically.
+
+#### Option 2: Download Directly from GitHub
+If you are running a fresh setup, you can download the three required HMM profile files directly from the official **Jstacs/AnnoTALE** repository:
+
+1. Create a local directory to house the HMM profiles:
+   ```bash
+   mkdir -p hmm_profiles
+   ```
+2. Download the three required `.hmm` files using `curl` or `wget`:
+   ```bash
+   # starts.hmm
+   curl -L -o hmm_profiles/starts.hmm https://raw.githubusercontent.com/Jstacs/AnnoTALE/master/annotale/src/main/resources/annotale/data/starts.hmm
+   
+   # repeats.hmm
+   curl -L -o hmm_profiles/repeats.hmm https://raw.githubusercontent.com/Jstacs/AnnoTALE/master/annotale/src/main/resources/annotale/data/repeats.hmm
+   
+   # ends.hmm
+   curl -L -o hmm_profiles/ends.hmm https://raw.githubusercontent.com/Jstacs/AnnoTALE/master/annotale/src/main/resources/annotale/data/ends.hmm
+   ```
+
+When running the TALE predictor binary (`rust_annotale`), pass this directory path to the `--hmm-dir` argument:
+```bash
+cargo run --release -- --fasta <path_to_genome> --hmm-dir ./hmm_profiles
+```
 
 ---
 
