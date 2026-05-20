@@ -49,6 +49,23 @@ Computes massive pairwise Levenshtein distance matrices comparing all structural
 
 ---
 
+## Profile Hidden Markov Models (HMMs)
+
+Transcription Activator-Like Effectors (TALEs) possess a highly conserved three-part structural composition. To accurately scan genomes and assemble these proteins, `rust_annotale` relies on three specialized Profile HMMs:
+
+1. **`starts.hmm` (N-terminus Profile)**: Maps the conserved N-terminal region responsible for type III secretion signals.
+2. **`repeats.hmm` (Tandem Repeat Profile)**: Identifies the canonical 34–35 amino acid repeat sequences in the central DNA-binding domain.
+3. **`ends.hmm` (C-terminus Profile)**: Maps the conserved C-terminal region containing nuclear localization signals (NLS) and transcription activation domains.
+
+### Where to Find Them
+These HMM profiles are part of the original AnnoTALE resource dataset. On this system, they are located at:
+```
+/home/diego/AnnoTALE/annotale/src/main/resources/annotale/data/
+```
+When running the TALE predictor binary (`rust_annotale`), pass this directory path to the `--hmm-dir` argument so that the tool can load `starts.hmm`, `repeats.hmm`, and `ends.hmm` dynamically.
+
+---
+
 ## Installation & Build
 
 To build and compile all binaries in release mode:
