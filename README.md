@@ -91,6 +91,21 @@ The native Java implementation suffers from exponential search scaling on genome
 
 ---
 
+## Citation & References
+
+This project is an optimized Rust implementation of the original Java-based AnnoTALE software suite. If you utilize `rust_annotale` in your academic or bioinformatics research, please ensure you cite the original authors and their foundational work:
+
+* **Foundational AnnoTALE Publication:**
+  > Grau J, Reschke M, Erkes A, Streubel J, Morgan RD, Wilson GG, Koebnik R, Boch J. (2016). *AnnoTALE: bioinformatics tools for identification, annotation, and nomenclature of TALEs from Xanthomonas genomic sequences*. **Scientific Reports**, 6:21077. DOI: [10.1038/srep21077](https://doi.org/10.1038/srep21077)
+
+* **Original Java Implementation:**
+  > Developed by Jstacs: [https://github.com/Jstacs/AnnoTALE](https://github.com/Jstacs/AnnoTALE)
+
+If your research includes evolutionary analysis of TALEs, please also consider citing:
+  > Erkes A, Reschke M, Boch J, Grau J. (2017). *Evolution of transcription activator-like effectors in Xanthomonas oryzae*. **Genome Biology and Evolution**, 9(6):1599–1615. DOI: [10.1093/gbe/evx115](https://doi.org/10.1093/gbe/evx115)
+
+---
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
