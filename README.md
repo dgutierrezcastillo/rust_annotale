@@ -1,0 +1,96 @@
+# rust_annotale
+
+A highly optimized, multi-threaded Rust implementation of the **AnnoTALE** (Annotation of TAL Effectors) bioinformatics suite. This toolkit enables high-throughput scanning, analysis, renaming, and comparative genomics of Transcription Activator-Like Effectors (TALEs) in bacterial genomes (e.g., *Xanthomonas* species).
+
+By leveraging Rust's safety guarantees and data-parallelism via `rayon`, `rust_annotale` achieves consistent, ultra-fast performance, solving major computational scaling bottlenecks in the original Java implementation.
+
+---
+
+## Features & Binaries
+
+The suite consists of the following components:
+
+### 1. Main TALE Predictor / Scanner (`rust_annotale`)
+Predicts and maps TALEs in whole-genome FastA files using profile Hidden Markov Models (HMMs).
+* **Usage**:
+  ```bash
+  cargo run --release -- --fasta <path_to_genome> --hmm-dir <path_to_hmm_directory> [options]
+  ```
+* **Arguments**:
+  * `-f, --fasta <FILE>`: Path to the input genome in FastA format.
+  * `-h, --hmm-dir <DIR>`: Path to the directory containing AnnoTALE HMM profiles.
+  * `-o, --outdir <DIR>`: Directory to write output files (defaults to `./annotale_out`).
+  * `-s, --sensitive`: Perform a sensitive scan.
+
+### 2. Systematic Dictionary Renaming (`rename`)
+Streamlines GFF3/Genbank files by replacing preliminary TALE identifiers with their systematic nomenclature assignments using a mapping dictionary.
+* **Usage**:
+  ```bash
+  cargo run --release --bin rename -- -r <mapping_tsv> -i <input_gff3> -o <output_directory>
+  ```
+* **Arguments**:
+  * `-r, --registry <FILE>`: TSV dictionary map file containing nomenclature mapping.
+  * `-i, --input <FILE>`: Input annotation file to process (GFF3 format).
+  * `-o, --outdir <DIR>`: Output directory where renamed annotations are stored.
+
+### 3. TALE Sequence Analyzer (`analyze`)
+Ingests TALE CDS DNA sequences, translates them to amino acids, automatically segments them into individual canonical 34–35 amino acid repeats using structural motif matching, and extracts their Repeat Variable Diresidues (RVDs).
+* **Usage**:
+  ```bash
+  cargo run --release --bin analyze -- -t <tale_fasta> -o <output_directory>
+  ```
+
+### 4. Repeat Sequence Pairwise Differences (`repdiff`)
+Computes massive pairwise Levenshtein distance matrices comparing all structural repeats of TALEs in the input. By parallelizing the $N \times M$ pairwise comparisons via `rayon`, this computation completes almost instantly.
+* **Usage**:
+  ```bash
+  cargo run --release --bin repdiff -- -t <tale_fasta> -o <output_directory>
+  ```
+
+---
+
+## Installation & Build
+
+To build and compile all binaries in release mode:
+
+1. Ensure you have the [Rust Toolchain](https://rustup.rs/) installed.
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/dgutierrezcastillo/rust_annotale.git
+   cd rust_annotale
+   ```
+3. Compile the release binaries:
+   ```bash
+   cargo build --release
+   ```
+   Compiled binaries will be available under `target/release/`.
+
+---
+
+## Performance Benchmarking
+
+A comprehensive benchmark was conducted comparing the original Java AnnoTALE software against our optimized `rust_annotale` tool across a diverse suite of 6 representative *Xanthomonas* genomes (conducted on a 16-thread CPU):
+
+### Execution Time & Speedup Comparison
+
+| Genome File | Genome Description | Java AnnoTALE Time | Rust `rust_annotale` Time | Speedup Factor |
+| :--- | :--- | :---: | :---: | :---: |
+| **`PX099A.fa`** | *X. oryzae* (High TALE density) | 9m 07.94s | **10.53s** | **52.0x** |
+| **`X11-5Agenome.fasta`** | *X. albilineans* (Low TALE density) | 24.88s | **7.86s** | **3.2x** |
+| **`XCCgenome.fasta`** | *X. campestris* (Low TALE density) | 29.44s | **9.30s** | **3.2x** |
+| **`Xcampestris.fasta`** | *X. campestris* (Low TALE density) | 25.17s | **10.26s** | **2.5x** |
+| ****`Xoc_BLS256.fasta`**** | *X. oryzae* (High TALE density) | 14m 43.47s | **8.63s** | **102.4x** |
+| **`Xoo_KACC_10331.fasta`** | *X. oryzae* (High TALE density) | 6m 44.80s | **8.92s** | **45.4x** |
+
+### Benchmark Visualization
+
+![Performance Comparison Plot](benchmark_comparison.png)
+
+### Key Takeaway
+The native Java implementation suffers from exponential search scaling on genomes with high TALE density (like `Xoc_BLS256` or `PX099A`), taking **nearly 15 minutes** to analyze a single genome. In contrast, `rust_annotale` maintains a flat, predictable **8–10 second runtime** across all strains due to highly parallelized, pure Rust HMM scanning and coordinate alignments—representing a **102.4x speedup** on complex biological datasets.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
