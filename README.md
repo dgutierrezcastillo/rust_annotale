@@ -61,7 +61,36 @@ Filters massive long-read sequencing datasets (PacBio and Oxford Nanopore Techno
   * `-m, --mode <heuristic|hmm|auto>`: Filtering mode (defaults to `auto`).
   * `-p, --preset <pacbio-hifi|pacbio-clr|ont|none>`: Preset settings matching technology error profiles (defaults to `none`).
 
+### 6. Frameshift & Truncation Scanner (`frameshifts`)
+Performs pairwise scans across all TALE sequences to automatically detect homologous pairs with internal indel events (frameshifts) or N/C-terminal truncations.
+
+Accepts both raw DNA FASTA sequences (auto-translates to RVDs) and pre-extracted RVD FASTA files. Outputs matches in the original AnnoTALE format using `+++++` and `#####` markers.
+
+* **Usage**:
+  ```bash
+  cargo run --release --bin frameshifts -- -i <tale_rvds_or_dna.fasta> [-o <output_file>]
+  ```
+* **Arguments**:
+  * `-i, --input <FILE>`: Input FASTA file (DNA sequences or RVD sequences in hyphen-delimited format).
+  * `-o, --output <FILE>`: Output file path (optional; writes to stdout if omitted).
+
+### 7. TALE Family Builder (`build_families`)
+Reconstructs hierarchical TALE family assignments using custom glocal dynamic programming RVD alignment, UPGMA average-linkage clustering, and a recursive length-mismatch splitting filter — matching the original AnnoTALE grouping algorithm.
+
+* **Usage**:
+  ```bash
+  cargo run --release --bin build_families -- -i <tale_rvds_or_dna.fasta> -o <output_directory> [--cut <threshold>]
+  ```
+* **Arguments**:
+  * `-i, --input <FILE>`: Input FASTA file (DNA sequences or RVD sequences).
+  * `-o, --outdir <DIR>`: Output directory for results (defaults to `./`).
+  * `-c, --cut <FLOAT>`: UPGMA tree cut distance threshold (defaults to `6.0`).
+* **Outputs**:
+  * `family_assignments.tsv` — Tab-separated table mapping each TALE to its family ID and RVD sequence.
+  * `family_summary.txt` — Human-readable summary showing the consensus RVD sequence and all members for each family.
+
 ---
+
 
 ## Profile Hidden Markov Models (HMMs)
 
