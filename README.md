@@ -47,6 +47,20 @@ Computes massive pairwise Levenshtein distance matrices comparing all structural
   cargo run --release --bin repdiff -- -t <tale_fasta> -o <output_directory>
   ```
 
+### 5. Long-Read Sequence Filter (`filter_reads`)
+Filters massive long-read sequencing datasets (PacBio and Oxford Nanopore Technologies, both raw and gzipped) to separate TALE-containing reads from non-TALE reads using parallelized profile HMM scanning and error-tailored heuristics.
+* **Usage**:
+  ```bash
+  cargo run --release --bin filter_reads -- --input <fastq_or_fasta> --hmm <repeats_hmm> --output-repeats <out_repeats> --output-norepeats <out_norepeats> [options]
+  ```
+* **Arguments**:
+  * `-i, --input <FILE>`: Input FASTQ/FASTA sequence file (.gz supported).
+  * `--hmm <FILE>`: Path to `repeats.hmm` file.
+  * `--output-repeats <FILE>`: Output path for TALE-containing reads (.gz supported).
+  * `--output-norepeats <FILE>`: Output path for non-TALE reads (.gz supported).
+  * `-m, --mode <heuristic|hmm|auto>`: Filtering mode (defaults to `auto`).
+  * `-p, --preset <pacbio-hifi|pacbio-clr|ont|none>`: Preset settings matching technology error profiles (defaults to `none`).
+
 ---
 
 ## Profile Hidden Markov Models (HMMs)

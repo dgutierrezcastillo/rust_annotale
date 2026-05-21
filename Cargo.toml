@@ -11,5 +11,7 @@ hmmer-pure-rs = { git = "https://github.com/henriksson-lab/hmmer-pure-rs", versi
 rayon = "1.10.0"
 clap = { version = "4.6.1", features = ["derive"] }
 strsim = "0.11.1"
+flate2 = "1.0.35"
+
 
 

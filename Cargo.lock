@@ -868,6 +868,7 @@ dependencies = [
  "anyhow",
  "bio",
  "clap",
+ "flate2",
  "genomic-system-finder-hmm",
  "hmmer-pure-rs",
  "rayon",
